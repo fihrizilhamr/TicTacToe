@@ -26,10 +26,6 @@ public class TicTacToeProtocol{
             }
         }
         SESSION++;
-        if (lastPlayed == CROSS)
-        	lastPlayed = CIRCLE;
-        else
-        	lastPlayed = CROSS;
     }
 	
 	//check if its valid move
@@ -47,6 +43,13 @@ public class TicTacToeProtocol{
 			return false;
 		}
 		return true;
+	}
+	
+	char currentMove() {
+		if (lastPlayed == CROSS)
+			return CIRCLE;
+		else
+			return CROSS;
 	}
 	
 	//make a move
