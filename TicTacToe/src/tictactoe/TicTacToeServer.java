@@ -13,7 +13,7 @@ public class TicTacToeServer {
 	private static String[] clientUserName = new String[2];
 	private static int[] clientScore = new int [2];
 	private static Boolean[] clientAgree = new Boolean [2];
-	private static boolean ready = false;
+	private static Boolean[] ready = new Boolean [2];
 	
 	
 	public static void main(String[] args) throws IOException {
@@ -56,7 +56,6 @@ public class TicTacToeServer {
 		BufferedReader in;
 		PrintWriter out;
 		private String userName;
-		private boolean ready;
 		
 		public TicTacToeServerThread(Socket clientSocket) {
 				// client = user, catching user
@@ -133,30 +132,46 @@ public class TicTacToeServer {
 				broadCastGame(clientUserName[0] + " : " + clientScore[0] + "\n"+clientUserName[1]+" : "+clientScore[1]);
 				broadCastGame("Wanna Rematch?(y/n)");
 			}
+			
+			private void setReady()
+			{
+				for(int i = 0; i < 2; i++)
+				{
+					ready[i] = false;
+				}
+			}
 
 			@Override
 			public void run() {
 				String message = null;
 				try {
 					setUserName();
+					setReady();
 					sendWelcomeScreen();				
 					while ((message = in.readLine()) != null) {
 						int row = -1, col = -1;
 						try {
 							//if agree for another match	
-							System.out.println("ID : " + id);
-							System.out.println(ready);
-							if(ready && message.equalsIgnoreCase("y")) {
+							boolean tempReady;			
+							if(id == 'O')
+							{
+								tempReady = ready[0];
+							}
+							else
+							{
+								tempReady = ready[1];
+							}
+							
+							if(tempReady && message.equalsIgnoreCase("y")) {
 								if(id == 'O'){
 									clientAgree[0] = true;
+									ready[0] = false;
 								}
 								else {
 									clientAgree[1] = true;
+									ready[1] = false;
 								}
 								
-								System.out.println("ID : " + id);
-								System.out.println(clientAgree[0]);
-								System.out.println(clientAgree[1]);
 								
 								if (clientAgree[0] == true && clientAgree[1] == true) {
 									System.out.println("Restarting Game!");
@@ -164,18 +179,19 @@ public class TicTacToeServer {
 									writeToClient(clientOutput[1], sendWelcomeScreenTwo(clientUserName[1], TicTacToeProtocol.CROSS));
 									clientAgree[0] = false;
 									clientAgree[1] = false;
+						
 								}
-								ready = true;
 							}
 							//if not
-							else if(ready && message.equalsIgnoreCase("n")) {
+							else if(tempReady && message.equalsIgnoreCase("n")) {
 								if(id == 'O') {
 									clientAgree[0] = false;
+									ready[0] = false;
 								}
 								else { 
 									clientAgree[1] = false;
+									ready[1] = false;
 								}
-								ready = false;
 								if (id == TicTacToeProtocol.CIRCLE)
 									writeToClient(clientOutput[1], clientUserName[0] + " doesn't want to play anymore!");
 								else
@@ -200,10 +216,10 @@ public class TicTacToeServer {
 								else if (result.contains("$")) {
 									broadCastGame(result);
 									newSession(id);
-									System.out.println("cek ID : " + id);
-									System.out.println("Ready Before : " + ready);
-									ready = true;
-									System.out.println("Ready After : " + ready);
+									for(int i = 0; i < 2; i++)
+									{
+										ready[i] = true;
+									} 
 								}
 								else {
 									broadCastGame(result);
