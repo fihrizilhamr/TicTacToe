@@ -13,6 +13,7 @@ public class TicTacToeServer {
 	private static String[] clientUserName = new String[2];
 	private static int[] clientScore = new int [2];
 	private static Boolean[] clientAgree = new Boolean [2];
+	private static Boolean[] ready = new Boolean [2];
 	
 	
 	public static void main(String[] args) throws IOException {
@@ -28,12 +29,14 @@ public class TicTacToeServer {
 		try {
 			serverSocket = new ServerSocket(port);
 			System.out.println("Server started on port " + port);
-			for(int i = 0; i < 2; i++){
+			for(int i = 1; i <= 2; i++){
+				System.out.println("Waiting for player " + i);
 				Socket clientSocket = serverSocket.accept();
 				new TicTacToeServerThread(clientSocket).start();
+				System.out.println("Player " + i + " has joined the game");
 			}
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			e.printStackTrace();
 		} finally {
 			closeResource(serverSocket);
 		}
@@ -55,11 +58,10 @@ public class TicTacToeServer {
 		BufferedReader in;
 		PrintWriter out;
 		private String userName;
-		private boolean ready;
 		
 		public TicTacToeServerThread(Socket clientSocket) {
 				// client = user, catching user
-			try {
+			try {			
 				socket = clientSocket;
 				InputStreamReader isReader = new InputStreamReader(socket.getInputStream());
 				in = new BufferedReader(isReader);
@@ -72,7 +74,7 @@ public class TicTacToeServer {
 				} catch (Exception ex) {
 			}
 		}
-			//preparing client, his/her id asn also score
+			//preparing client, his/her id and also score
 			private void setClient() {
 				if (clientOutput[0] == null) {
 					this.id = TicTacToeProtocol.CIRCLE;
@@ -84,6 +86,7 @@ public class TicTacToeServer {
 			}
 			//ask for username
 			private void setUserName() throws IOException {
+				
 				out.println("Enter your name :");
 				out.flush();
 				String user = in.readLine(); 
@@ -120,16 +123,26 @@ public class TicTacToeServer {
 				out.flush();
 			}
 			//preparing for new session
-			private void newSession(char id) {
-				if(id == TicTacToeProtocol.CIRCLE) {
-					clientScore[0]++;
-				}
-				else {
-					clientScore[1]++;
+			private void newSession(char id, String result) {
+				if (result.contains("Game Over")) {
+					if(id == TicTacToeProtocol.CIRCLE) {
+						clientScore[0]++;
+					}
+					else {
+						clientScore[1]++;
+					}
 				}
 				game.resetBoard();
 				broadCastGame(clientUserName[0] + " : " + clientScore[0] + "\n"+clientUserName[1]+" : "+clientScore[1]);
 				broadCastGame("Wanna Rematch?(y/n)");
+			}
+			
+			private void setReady()
+			{
+				for(int i = 0; i < 2; i++)
+				{
+					ready[i] = false;
+				}
 			}
 
 			@Override
@@ -137,33 +150,42 @@ public class TicTacToeServer {
 				String message = null;
 				try {
 					setUserName();
-					sendWelcomeScreen();
+					setReady();
+					sendWelcomeScreen();				
 					while ((message = in.readLine()) != null) {
 						int row = -1, col = -1;
 						try {
-							//if agree for another match
-							if(ready && message.equalsIgnoreCase("y")) {
-								if(id == 'O')
+							//if agree for another match	
+							if((ready[0] || ready[1]) && message.equalsIgnoreCase("y")) {
+								if(id == 'O'){
 									clientAgree[0] = true;
-								else 
+									ready[0] = false;
+								}
+								else {
 									clientAgree[1] = true;
+									ready[1] = false;
+								}
+								
+								
 								if (clientAgree[0] == true && clientAgree[1] == true) {
+									System.out.println("Restarting Game!");
 									writeToClient(clientOutput[0], sendWelcomeScreenTwo(clientUserName[0], TicTacToeProtocol.CIRCLE));
 									writeToClient(clientOutput[1], sendWelcomeScreenTwo(clientUserName[1], TicTacToeProtocol.CROSS));
 									clientAgree[0] = false;
 									clientAgree[1] = false;
+						
 								}
-								ready = false;
 							}
 							//if not
-							else if(ready && message.equalsIgnoreCase("n")) {
+							else if((ready[0] || ready[1]) && message.equalsIgnoreCase("n")) {
 								if(id == 'O') {
 									clientAgree[0] = false;
+									ready[0] = false;
 								}
 								else { 
 									clientAgree[1] = false;
+									ready[1] = false;
 								}
-								ready = false;
 								if (id == TicTacToeProtocol.CIRCLE)
 									writeToClient(clientOutput[1], clientUserName[0] + " doesn't want to play anymore!");
 								else
@@ -185,10 +207,12 @@ public class TicTacToeServer {
 								if (result.contains("~~")) {
 									writeToClient(result);
 								}
-								else if (result.contains("$")) {
+								else if (result.contains("Game")) {
 									broadCastGame(result);
-									newSession(id);
-									ready = true;
+									newSession(id, result);
+									for(int i = 0; i < 2; i++){
+										ready[i] = true;
+									} 
 								}
 								else {
 									broadCastGame(result);
@@ -207,7 +231,18 @@ public class TicTacToeServer {
 						}
 					}
 				} catch (IOException e) {
-					System.out.println(e.getMessage());
+					if(e instanceof IOException)
+					{
+						//when a client closed the programn
+						System.out.println("Client left unexpectedly!");
+						writeToClient(clientOutput[0], clientUserName[0] + " has left unexpectedly!");
+						writeToClient(clientOutput[1], clientUserName[1] + " has left unexpectedly!");
+					}
+					else
+					{
+						//unknown error
+						e.printStackTrace();
+					}
 				}
 			}
 			
@@ -217,6 +252,7 @@ public class TicTacToeServer {
 					writeToClient(client, data);
 				}
 			}
+			
 	}
 
 	

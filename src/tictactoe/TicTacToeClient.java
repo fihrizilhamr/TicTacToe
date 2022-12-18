@@ -32,7 +32,16 @@ public class TicTacToeClient extends Thread{
 			this.start();
 			takeInput();
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			if(ex instanceof IOException)
+			{	
+				//if there is no server up with such port number
+				System.out.println("There is currently no server with port number " + portNumber + " up!");
+			}
+			else
+			{
+				//unknown error
+				ex.printStackTrace();
+			}
 		}
 	}
 
@@ -59,16 +68,22 @@ public class TicTacToeClient extends Thread{
 		try {
 			while ((stream = in.readLine()) != null) {
 				System.out.println(stream);// Server response
-//				if (stream.startsWith("$")) {
-//					System.exit(0);
-//				}
 				//if its the end, system exit
 				if (stream.contains("The End!")) {
 					System.exit(0);
 				}
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			if(ex instanceof IOException)
+			{
+				//if server closed unexpectedly
+				System.out.println("\nThe server is currently down!");
+			}
+			else
+			{	
+				//unknown error
+				ex.printStackTrace();
+			}
 		}
 	}
 

@@ -62,9 +62,9 @@ public class TicTacToeProtocol{
 				cell[row][col] = move;
 				lastPlayed = move;
 				if (isWon(move)) {
-					data = printBoard() + "\n$$$ Game Over! Good Game, " + move + " is the winner... $$$";
+					data = printBoard() + "\nGame Over! Good Game, " + move + " is the winner!";
 				} else if (isFull()) {
-					data = printBoard() + "~~ Game Draw!... ~~";
+					data = printBoard() + "\nGame Draw!";
 				} else {
 					data = printBoard() + "\nMove Updated!";
 				}
