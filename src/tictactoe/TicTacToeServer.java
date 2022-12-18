@@ -200,7 +200,7 @@ public class TicTacToeServer {
 									writeToClient(clientOutput[0], userName + ": " + message.substring(2));
 							}
 							//else, make a move
-							else {
+							else if (!ready[0] && !ready[1]){
 								row = message.charAt(0)-'0';
 								col = message.charAt(1)-'0';
 								String result = game.makeMove(id, row, col);
